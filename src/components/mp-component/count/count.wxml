@@ -1,0 +1,15 @@
+
+<view class="count_box">
+    <view class="count_group">
+        <view class="count_btn" data-tar="minus" bind:tap="tapBtn">
+            <view>-</view>
+        </view>
+        <view class="count_input">
+            <input class="count-input" value="{{count}}" bind:blur="blurHandle" bindinput="inputHandle"></input>
+        </view>
+        <view class="count_btn" data-tar="plus" bind:tap="tapBtn">
+            <view class="plus-btn">+</view>
+        </view>
+    </view>
+    <view wx:if='{{errorMsg}}' class="errorMsg">{{errorMsg}}</view> 
+</view>

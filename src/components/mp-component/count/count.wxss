@@ -1,0 +1,40 @@
+.count_box {
+  width: 230rpx;
+}
+.count_group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20rpx;
+  height: 70rpx;
+  border-radius: 4rpx;
+}
+.count_input{
+  width: 80rpx;
+}
+.count_btn {
+  width:42rpx;
+  height:42rpx;
+  padding:12rpx 0 10rpx 10rpx;
+  line-height:42rpx;
+  font-weight:bold;  
+}
+.errorMsg {
+  margin-top: 4rpx;
+  font-size: 26rpx;
+  color: #ff6600;
+  text-align: right;
+}
+input{
+  text-align: center;
+  font-size: 36rpx;
+}
+.count-input{
+  width: 82rpx;
+  height: 52rpx;
+  background:#F7F7F7;
+  line-height: 52rpx;
+}
+.plus-btn{
+  margin-left:15rpx;
+}
