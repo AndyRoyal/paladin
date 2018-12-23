@@ -81,7 +81,7 @@ export default {
            if(typeof node.value == "string" && isNaN(node.value) != true){
              let newVal = Math.floor((node.value*2.34) * 100) / 100//转换比例待处理
              if(node.type === "Percentage"){ 
-               newVal = node.value
+              console.log("node.value",node.value)
              }else if(node.type === "Dimension"){
                node.value = newVal;
              }

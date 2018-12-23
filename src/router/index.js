@@ -48,8 +48,8 @@ export default new Router({
     },
     {
       path: '/',
-      name: 'index',
-      component: Index
+      name: 'JsTs1204',
+      component: JsTs1204
     },
     {
       path: '/babel',

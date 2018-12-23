@@ -67,6 +67,10 @@
         this表达式处理,发现this.data.xx = 1, 一律删除，this.data.a的默认保留
         this.setData({});不会受到影响
       </li>
+      <li>
+        //created, watch  的转换 对应小程序没有
+        // mounted 转换为 ready
+      </li>
     </ul>
   </div>
 </template>
@@ -118,11 +122,14 @@ export default {
                   },
                   methods: {
                      textFn() {
-                       this.num  = 2
-                       this.$A  = 2
+                       this.num  = 2 //isExpressionStatement true
+                        
                       
                     }
-                  }
+                  },
+                  mounted(){},
+                  created(){},
+                  watch:{}
                 }
                 `;
       //to ast
@@ -135,11 +142,29 @@ export default {
       //
       traverse(ast, {
         enter(path) {
-          //console.log("enter: " + path.node.type);
+         /*  if (path.node.type === "ThisExpression") {
+            console.log("ThisExpression: " + path.node.type);
+          }; */
+        //  console.log("enter: " + path.node.type);
         },
-
+        ObjectMethod(path){alert();
+          if(path.node.key.name === "mounted"){
+            path.node.key.name = "ready"
+          }
+          else if(path.node.key.name === "created"){
+            console.log("no created")
+          } 
+          console.log("enter22: " + path.node.key.name);
+        },
+       /*  ExpressionStatement(path){ console.log("enter: " + path.node.type);
+           
+        }, */
+     /*    ThisExpression(path){
+          console.log("ThisExpression: " + path.node.type);
+        }, */
         // 替换props为properties与this.prop转为this.data.prop
         ObjectProperty(path) {
+          console.log("enter11: " + path.node.key.name);
           //props 替换为 properties
           if (path.node.key.name === "props") {
             path.node.key.name = "properties";
@@ -158,7 +183,11 @@ export default {
                 path.skip();
               }
             });
-          } else if (path.node.key.name === "methods") {
+          }
+          else if(path.node.key.name === "created"){
+            console.log("no watch")
+          }  
+          else if (path.node.key.name === "methods") {
             path.traverse({
               enter(path) {
                 //console.log("内部二级path - enter : " + path.node.type);
@@ -169,9 +198,10 @@ export default {
                 traverse(ast, {
                   enter(path) {
                     // console.log("内部二级path - enter : " + path.node.type);
+                
                   },
                   BinaryExpression(path) {
-                    debugger;
+                    
                     // 注意这里要有判断，否则会无限进入`BinaryExpression`
                     // https://stackoverflow.com/questions/37539432/babel-maximum-call-stack-size-exceeded-while-using-path-replacewith
                     if (path.node.operator === "+") {
@@ -200,11 +230,15 @@ export default {
                     t.isUpdateExpression(path.parentPath)
                   ) {
                     // find path
-                    const expressionStatement = path.findParent(parent =>
+                    const expressionStatement = path.findParent(parent =>{
+                      
                       parent.isExpressionStatement()
+
+                    }
                     );
                     // 创建setData
                     if (expressionStatement) {
+                     console.log("expressionStatement", generate(expressionStatement, {}, code).code )
                       //var dataValItem  =this.data.path.node.property.name
                       const finalExpStatement = t.expressionStatement(
                         t.callExpression(
@@ -223,7 +257,8 @@ export default {
                             ])
                           ]
                         )
-                      );
+                      );debugger
+                      console.log("finalExpStatement",finalExpStatement)
                       expressionStatement.insertAfter(finalExpStatement);
                     }
                     //path.remove();
@@ -253,7 +288,7 @@ export default {
         //data 转换为 object
         ObjectMethod(path) {
     
-          console.log("path.node.key.name ", path.node); // data, add, textFn
+         // console.log("path.node.key.name ", path.node); // data, add, textFn
           // console.log("path.node ",path.node )// data, add, textFn
           if (path.node.key.name === "data") {
             path.traverse({
@@ -288,7 +323,7 @@ export default {
                 )
             );
             //path.remove();
-            console.log("testOBJ",testOBJ)
+           // console.log("testOBJ",testOBJ)
           }
           if (path.node.type === "ExportDefaultDeclaration") {
             if (path.node.declaration.properties) {
@@ -335,8 +370,44 @@ export default {
       //builderMPAST();
     }
   },
-  created() {}
+  created() {
+
+    var types={
+      callExpression: "调用表达式",
+      MemberExpression: "成员表达式",//this.num
+      NumericLiteral :  "数字文字",//2
+      stringLiteral : "字符串文字",// "字符串aaa"
+      ExpressionStatement : "表达式语句",//component() 或者 一行代码
+      AssignmentExpression : "赋值表达式", // this.num =2
+      binaryExpression : "二进制表达式", // a*b
+      Identifier : "标识符", // num
+
+    }
+    //赋值表达式 : this.num = 2
+    var  AssignmentExpression ={
+      operator: "=",
+      left:{
+        MemberExpression : {
+          MemberExpression:{
+            ThisExpression: "this",
+            Identifier:"num"
+          }
+        }
+      },
+      right:{
+        NumericLiteral : 2
+      }
+
+    }
+  }
 };
 </script>
+
+
+
+
+
+
+
 
 
