@@ -104,6 +104,7 @@ export default {
       //输入
       var code = `
                export default {
+                  name: "footerCom",//去掉name
                   props: {//组件的对外属性
                       code:{
                           type:String,
@@ -123,13 +124,34 @@ export default {
                   methods: {
                      textFn() {
                        this.num  = 2 //isExpressionStatement true
-                        
-                      
+                    },
+                    fn1(){
+                      this.$emit('myEventIn2', _data);// this.triggerEvent('customevent', {}, { bubbles: true, composed: true })
+                      //先转$emit为triggerEvent
                     }
                   },
-                  mounted(){},
-                  created(){},
-                  watch:{}
+                  mounted(){
+                    this.textFn()
+                    //mounted转为 ready(){} 或 ready:function(){}
+                  },
+                  created(){
+                    this.$emit('myEvent', _data);
+                    this.fn1()
+                    //created转为created 或者 attached
+                  },
+                  watch: {
+                    //mp 不支持
+                  },
+                  computed: {
+                    //mp 不支持
+                  },
+                  destroyed: function(){
+                    //这种写法后续迭代增加
+                    //转为 detached
+                  },
+                  destroyed(){
+                    //destroyed转为 detached
+                  }
                 }
                 `;
       //to ast
@@ -137,23 +159,35 @@ export default {
         sourceType: "module",
         plugins: ["flow"]
       });
-      console.log("parse ast",ast)
+      console.log("转换前",ast)
       //转换 ast
       //
       traverse(ast, {
         enter(path) {
-         /*  if (path.node.type === "ThisExpression") {
-            console.log("ThisExpression: " + path.node.type);
-          }; */
-        //  console.log("enter: " + path.node.type);
+           if (path.node.type === "ThisExpression") {// 不会遍历函数内部的this，只遍历钩子内部一级
+              if(path.parent.property.name === "$emit"){
+                  path.parent.property.name = "triggerEvent"
+              }
+            console.log("ThisExpression: " ,path, path.parent.property.name);
+          }; 
+        // console.log("enter0: " + path.node.type);
+         if(path.node.type === "ObjectMethod"){
+                   if(path.node.key.name === "mounted"){
+                     path.node.key.name = "ready"
+                   }
+                   else if(path.node.key.name === "created"){
+                       path.node.key.name = "attached"
+                   }else if(path.node.key.name === "destroyed"){
+                     path.node.key.name = "detached"
+                   }else if(path.node.type === "ThisExpression"){
+                        console.log("ObjectMethod内部this表达式",path.node)
+                   }else{
+                       void null
+                   }  
+
+         }
         },
         ObjectMethod(path){alert();
-          if(path.node.key.name === "mounted"){
-            path.node.key.name = "ready"
-          }
-          else if(path.node.key.name === "created"){
-            console.log("no created")
-          } 
           console.log("enter22: " + path.node.key.name);
         },
        /*  ExpressionStatement(path){ console.log("enter: " + path.node.type);
@@ -164,12 +198,7 @@ export default {
         }, */
         // 替换props为properties与this.prop转为this.data.prop
         ObjectProperty(path) {
-          console.log("enter11: " + path.node.key.name);
-          //props 替换为 properties
-          if (path.node.key.name === "props") {
-            path.node.key.name = "properties";
-          }
-
+         // console.log("enter11: " + path.node.key.name);
           //从data中提取数据属性  X废弃X
           if (path.node.key.name === "data") {
             path.traverse({
@@ -184,8 +213,19 @@ export default {
               }
             });
           }
-          else if(path.node.key.name === "created"){
-            console.log("no watch")
+          else if(path.node.key.name === "watch"){
+            path.remove();
+            console.log("mp不支持 watch")
+          }
+          else if(path.node.key.name === "props"){
+              path.node.key.name = "properties";
+          }
+          else if(path.node.key.name === "name"){
+            path.remove()
+          }  
+          else if(path.node.key.name === "computed"){
+            path.remove();
+            console.log("mp不支持 computed")
           }  
           else if (path.node.key.name === "methods") {
             path.traverse({
@@ -399,10 +439,122 @@ export default {
       }
 
     }
+
+
+
+
+
+
+    
+/**_____________________ 小程序自定义组件生命周期 与其他钩子函数_____________________**/
+
+
+
+//created 组件实例化，但节点树还未导入，因此这时不能用setData
+//
+//attached 节点树完成，可以用setData渲染节点，但无法操作节点
+//
+//ready(不是onReady) 组件布局完成，这时可以获取节点信息，也可以操作节点
+//
+//moved 组件实例被移动到树的另一个位置
+//
+//detached 组件实例从节点树中移除
+var mpLife = {
+    created: function(){}, // 组件在内存中创建完毕执行
+    attached: function(){}, // 组件挂载之前执行
+    ready: function() {}, // 组件挂载后执行
+    detached: function(){}, // 组件移除执行
+    moved: function(){}, // 组件移动的时候执行
+}
+
+//**_____________________ vue组件的生命周期函数 与其他钩子_____________________**/
+var VueLife = {
+  beforeCreate(){},
+  created(){},
+  beforeMount(){},
+  mounted(){},
+  beforeUpdate(){},
+  updated(){},
+  beforeDestroy(){},
+  destroyed(){},
+}  
+
+
+//1.  计算属性   computed: {}  与  watch:{}
+//2. props简写   
+
+ /* props: {
+      to: {},
+      replace: Boolean
+    }, */
+
+   // 小程序是否支持？
+//3. provide() {} 钩子  不常见
+//4.  this.$el.querySelectorAll('.el-breadcrumb__item')  //查找组件的class   不常见
+//5. 
+
+
+//**_____________________ vue转换小程序生命周期 的转换 _____________________**/
+//  1. mounted() {} 转换为  ready: function() {}, 
+//  2. created(){} 小程序支持 不用转换   或者转换为 attached(){}  需要调试
+//  3. destroyed() {} 转换为  detached(){}  
+//  4. 计算属性   computed: {}  与  watch:{} 小程序不支持  不做转化，暂不支持
+//  5. 
+
+/**_____________________ vue 自定义事件 父组件触发子组件的自定义事件   父组件获取子组件内部的事件和参数 _____________________**/
+//父组件
+/*  <my-child abcClick="sayHello"></my-child>
+   method: {
+        sayHello(Num,Str) {
+            alert('hello world~~' + Num + Str)
+        }
+    } */
+//子组件
+/*      <button @click="childClick"></button>
+      method: {
+        childClick() {
+          // 参数一： 事件名称（在父组件调用里使用）， 参数二： 传递给父组件的参数数据
+            this.$emit('abcClick', this.myNum, this.myStr)
+        }
+    } */
+//  this.$emit('myEvent')
+/**_____________________mp 自定义事件 微信小程序中是通过triggerEvent来给父组件传递信息的 _____________________**/
+//----父组件事件使用
+/* <eg bind:myevent="onMyEvent"></eg>
+
+onMyEvent: function (e) {
+  console.log(e)
+} */
+
+//-----自定义组件中
+//自定义组件触发事件时，需要使用 triggerEvent 方法，指定事件名、detail对象和事件选项
+/* <button bindtap="onTap">点击这个按钮将触发“myevent”事件</button>
+
+Component({
+  properties: {}
+  methods: {
+    onTap: function(){
+      var myEventDetail = {} // detail对象，提供给事件监听函数
+      var myEventOption = {} // 触发事件的选项
+      this.triggerEvent('myevent', myEventDetail, myEventOption)
+    }
+  }
+}) */
+
+/**_____________________注意点： _____________________**/
+
+//  1. properties 按照 如下方式写：
+/*    num: {    
+      type: Number,
+      value: 1
+    } */
+// 1. 去掉name   export default {
+//    name: 'ElBreadcrumbItem'}
+
+
   }
 };
 </script>
-
 
 
 
