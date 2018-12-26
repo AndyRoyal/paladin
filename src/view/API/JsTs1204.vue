@@ -539,7 +539,7 @@ Component({
       this.triggerEvent('myevent', myEventDetail, myEventOption)
     }
   }
-}) */
+})  */
 
 /**_____________________注意点： _____________________**/
 
