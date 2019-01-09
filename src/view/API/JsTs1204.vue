@@ -72,6 +72,54 @@
         // mounted 转换为 ready
       </li>
     </ul>
+    <p class="arguments">
+      <b>参数处理前：</b>
+        span data-args0="{{"e"}}" data-args1="{{666}}" data-args2="{{true}}"  @click="testFn" span 
+      <b>参数处理后：</b>
+      methods:{
+        testFn(arg1,arg2){
+          //原有参数不做处理，把第一个参数处理为event  改变为(event,arg1,arg2)
+          其他参数取出来然后重新赋值：
+          let arg1 = event.dataset.arg1
+          let arg2 = event.dataset.arg2
+          //此处循环插入的变量参数个数为参数的长度
+
+        //小程序组件中事件的方法取参数
+         handleClickItem (e) {
+            const key = e.currentTarget.dataset.key;
+            this.emitEvent(key);
+        }
+
+        }
+      }
+    </p>
+
+    <p>
+      <!-- 小程序中的写法 -->
+       methods : {
+        toggle(){
+            if( this.data.disabled ) return;
+            const data = this.data;
+            const value = data.value ? false : true;
+            this.triggerEvent('change',{
+                value : value
+            })
+        }
+    }
+
+
+    handleClick(e){
+            const data = this.data;
+            if( data.disabled ){
+                return;
+            }
+            const index = e.currentTarget.dataset.index;
+            this.triggerEvent('change',{
+                index : index + 1
+            })
+        },
+    </p>
+
   </div>
 </template>
 <style scoped>
@@ -122,8 +170,13 @@ export default {
                       }
                   },
                   methods: {
+                    argsFn(arg1,arg2){
+                      //给每一个方法增加第一个参数为event。取出所有的vue方法参数，重新制作参数
+                      return  arg1 + arg2
+                    },
                      textFn() {
                        this.num  = 2 //isExpressionStatement true
+                       this.$A  = 12 
                     },
                     fn1(){
                       this.$emit('myEventIn2', _data);// this.triggerEvent('customevent', {}, { bubbles: true, composed: true })
@@ -168,7 +221,7 @@ export default {
               if(path.parent.property.name === "$emit"){
                   path.parent.property.name = "triggerEvent"
               }
-            console.log("ThisExpression: " ,path, path.parent.property.name);
+            //console.log("ThisExpression: " ,path, path.parent.property.name);
           }; 
         // console.log("enter0: " + path.node.type);
          if(path.node.type === "ObjectMethod"){
@@ -187,7 +240,7 @@ export default {
 
          }
         },
-        ObjectMethod(path){alert();
+        ObjectMethod(path){
           console.log("enter22: " + path.node.key.name);
         },
        /*  ExpressionStatement(path){ console.log("enter: " + path.node.type);
@@ -230,9 +283,48 @@ export default {
           else if (path.node.key.name === "methods") {
             path.traverse({
               enter(path) {
-                //console.log("内部二级path - enter : " + path.node.type);
+       
               },
+              ObjectExpression(path){
+                //生成小程序方法中的参数
+               // console.log("内部二级path : " + JSON.stringify(path.node));
+                if(path.node.properties){
+                      //traverse的方式生成小程序方法中的参数
+                      path.traverse({
+                        ObjectMethod(path1){
+                              var blockStatement1 = null
+                               path1.traverse({ 
+                                 BlockStatement(path1) {
+                                   
+                                 //  blockStatement1 = path1.node
+                                    console.log("blockStatement1---:",path1.node)
+                                   if(path1.node.body){
 
+                                      //path1.insertBefore(t.memberExpression(t.thisExpression(), t.identifier('setData')));
+                                   }
+                                    //path.remove()
+                                  }
+                                })
+                                //path1.replaceWithSourceString('111')
+
+                      //需要判断出哪些方法是在模板中调用，哪些方法是在JS中调用。
+                      //模板中调用的需要参数处理，JS中调用的不需要参数处理
+                  
+                        }
+                      })
+
+                  //X-废弃--不用tarverse的方式生成小程序方法中的参数
+                   /* path.node.properties.map((v,i)=>{
+                    if(v.type==="ObjectMethod"){
+                      path.insertBefore(t.expressionStatement(t.stringLiteral("Because I'm easy come, easy go.")));
+                      //需要判断出哪些方法是在模板中调用，哪些方法是在JS中调用。
+                      //模板中调用的需要参数处理，JS中调用的不需要参数处理
+                      console.log("methods中方法",v)
+                    }
+                  }) */
+                }
+
+              },
               //修改数据属性至this.data.prop等
               MemberExpression(path) {
                 traverse(ast, {
@@ -261,7 +353,7 @@ export default {
                   path.node.object.type === "ThisExpression" &&
                   datasVals.includes(path.node.property.name)
                 ) {
-                  // console.log("path.node.object",path.node)
+                  console.log("path.node.object::",path.node)
                   path.get("object").replaceWithSourceString("this.data");
                   //判是不是赋值操作
                   if (
@@ -307,7 +399,6 @@ export default {
               },
               //表达式处理XXX
               BinaryExpression(path) {
-                debugger;
                 console.log(
                   "this表达式处理,发现this.data.a = 1, 一律删除，this.data.a的默认保留"
                 );

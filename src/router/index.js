@@ -24,6 +24,7 @@ import created1203 from '@/view//babelDEMOS/created1203'  //template处理  引�
 //API  - > 创建,操作,验证ast节点  2018-12-04
 import API from '@/view/API/API' 
 import JsTs1204 from '@/view/API/JsTs1204' //new
+import jsTs0109 from '@/view/API/jsTs0109' //new
 
 
 Vue.use(Router)
@@ -34,6 +35,11 @@ export default new Router({
     {
       path: '/JsTs1204',
       name: 'JsTs1204',
+      component: JsTs1204
+    },
+    {
+      path: '/jsTs0109',
+      name: 'jsTs0109',
       component: JsTs1204
     },
     {
