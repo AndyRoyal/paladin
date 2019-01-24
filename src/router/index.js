@@ -54,7 +54,7 @@ export default new Router({
     },
     {
       path: '/',
-      name: 'JsTs1204',
+      name: 'jsTs0109',
       component: JsTs1204
     },
     {

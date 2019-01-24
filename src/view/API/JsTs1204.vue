@@ -240,6 +240,65 @@ export default {
 
          }
         },
+                      //修改数据属性至this.data.prop等
+              MemberExpression(path) {    
+                
+                let datasVals = datas.map((item, index) => {
+                  return item.key.name; //拿到data属性中的第一级
+                });
+                console.log("datasVals:",datasVals)
+                //有等于号的this.a=1，改变为this.setData({});
+                //没有等于号的this.a, 转变为 this.data.a
+                if (
+                  path.node.object.type === "ThisExpression" &&
+                  datasVals.includes(path.node.property.name)
+                ) {
+                  path.get("object").replaceWithSourceString("this.data");
+                  //判是不是赋值操作
+                  if (
+                    (t.isAssignmentExpression(path.parentPath) &&
+                      path.parentPath.get("left") === path) ||
+                    t.isUpdateExpression(path.parentPath)
+                  ) {
+                    console.log("path.node.object-----",t.isAssignmentExpression(path.parentPath) &&
+                      path.parentPath.get("left") === path,path)
+                    // find path
+                    const expressionStatement = path.findParent(parent =>{
+                      
+                      parent.isExpressionStatement()
+
+                    }
+                    );
+                    // 创建setData
+
+                     console.log("expressionStatement---------", generate(expressionStatement, {}, code).code )
+                    if (expressionStatement) {
+                      //var dataValItem  =this.data.path.node.property.name
+                      const finalExpStatement = t.expressionStatement(
+                        t.callExpression(
+                          t.memberExpression(
+                            t.thisExpression(),
+                            t.identifier("setData")
+                          ),
+                          [
+                            t.objectExpression([
+                              t.objectProperty(
+                                t.identifier(path.node.property.name),
+                                t.identifier(
+                                  `this.data.${path.node.property.name}`
+                                )
+                              )
+                            ])
+                          ]
+                        )
+                      );debugger
+                      console.log("finalExpStatement",finalExpStatement)
+                      expressionStatement.insertAfter(finalExpStatement);
+                    }
+                    //path.remove();
+                  }
+                }
+              },
         ObjectMethod(path){
           console.log("enter22: " + path.node.key.name);
         },
@@ -297,7 +356,7 @@ export default {
                                  BlockStatement(path1) {
                                    
                                  //  blockStatement1 = path1.node
-                                    console.log("blockStatement1---:",path1.node)
+                                  //  console.log("blockStatement1---:",path1.node)
                                    if(path1.node.body){
 
                                       //path1.insertBefore(t.memberExpression(t.thisExpression(), t.identifier('setData')));
@@ -325,78 +384,7 @@ export default {
                 }
 
               },
-              //修改数据属性至this.data.prop等
-              MemberExpression(path) {
-                traverse(ast, {
-                  enter(path) {
-                    // console.log("内部二级path - enter : " + path.node.type);
-                
-                  },
-                  BinaryExpression(path) {
-                    
-                    // 注意这里要有判断，否则会无限进入`BinaryExpression`
-                    // https://stackoverflow.com/questions/37539432/babel-maximum-call-stack-size-exceeded-while-using-path-replacewith
-                    if (path.node.operator === "+") {
-                      path.replaceWith(
-                        t.binaryExpression("*", path.node.left, path.node.right)
-                      );
-                    }
-                  }
-                });
 
-                let datasVals = datas.map((item, index) => {
-                  return item.key.name; //拿到data属性中的第一级
-                });
-                //有等于号的this.a=1，改变为this.setData({});
-                //没有等于号的this.a, 转变为 this.data.a
-                if (
-                  path.node.object.type === "ThisExpression" &&
-                  datasVals.includes(path.node.property.name)
-                ) {
-                  console.log("path.node.object::",path.node)
-                  path.get("object").replaceWithSourceString("this.data");
-                  //判是不是赋值操作
-                  if (
-                    (t.isAssignmentExpression(path.parentPath) &&
-                      path.parentPath.get("left") === path) ||
-                    t.isUpdateExpression(path.parentPath)
-                  ) {
-                    // find path
-                    const expressionStatement = path.findParent(parent =>{
-                      
-                      parent.isExpressionStatement()
-
-                    }
-                    );
-                    // 创建setData
-                    if (expressionStatement) {
-                     console.log("expressionStatement", generate(expressionStatement, {}, code).code )
-                      //var dataValItem  =this.data.path.node.property.name
-                      const finalExpStatement = t.expressionStatement(
-                        t.callExpression(
-                          t.memberExpression(
-                            t.thisExpression(),
-                            t.identifier("setData")
-                          ),
-                          [
-                            t.objectExpression([
-                              t.objectProperty(
-                                t.identifier(path.node.property.name),
-                                t.identifier(
-                                  `this.data.${path.node.property.name}`
-                                )
-                              )
-                            ])
-                          ]
-                        )
-                      );debugger
-                      console.log("finalExpStatement",finalExpStatement)
-                      expressionStatement.insertAfter(finalExpStatement);
-                    }
-                    //path.remove();
-                  }
-                }
-              },
               //表达式处理XXX
               BinaryExpression(path) {
                 console.log(

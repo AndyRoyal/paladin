@@ -2,7 +2,7 @@
   <div style="font-size:12px; text-align:left"></div>
 </template>
 <script>
-const babel = require("babel-core");
+//const babel = require("babel-core");
 const t = require("@babel/types");
 const generate = require("@babel/generator").default;
 const traverse = require("@babel/traverse").default;
@@ -12,6 +12,7 @@ import * as babylon from "babylon";
 export default {
   mounted() {
     this.parseScript();
+    //this.traverseAst();
   },
   data() {
     return {};
@@ -213,13 +214,10 @@ export default {
       traverse(ast, {
         enter(path) {
           if (path.node.type === "ThisExpression") {
-            // 不会遍历函数内部的this，只遍历钩子内部一级
             if (path.parent.property.name === "$emit") {
               path.parent.property.name = "triggerEvent";
             }
-            //console.log("ThisExpression: " ,path, path.parent.property.name);
           }
-          // console.log("enter0: " + path.node.type);
           if (path.node.type === "ObjectMethod") {
             if (path.node.key.name === "mounted") {
               path.node.key.name = "ready";
@@ -228,6 +226,9 @@ export default {
             } else if (path.node.key.name === "destroyed") {
               path.node.key.name = "detached";
             } else if (path.node.type === "ThisExpression") {
+               if (path.parent.property.name === "$emit") {
+              path.parent.property.name = "triggerEvent";
+            }
               console.log("ObjectMethod内部this表达式", path.node);
             } else {
               void null;
@@ -237,15 +238,7 @@ export default {
         ObjectMethod(path) {
           console.log("enter22: " + path.node.key.name);
         },
-        /*  ExpressionStatement(path){ console.log("enter: " + path.node.type);
-           
-        }, */
-        /*    ThisExpression(path){
-          console.log("ThisExpression: " + path.node.type);
-        }, */
-        // 替换props为properties与this.prop转为this.data.prop
         ObjectProperty(path) {
-          // console.log("enter11: " + path.node.key.name);
           //从data中提取数据属性  X废弃X
           if (path.node.key.name === "data") {
             path.traverse({
@@ -271,41 +264,29 @@ export default {
             console.log("mp不支持 computed");
           } else if (path.node.key.name === "methods") {
             path.traverse({
-              enter(path) {},
+              enter(path) {alert()
+                 if (path.node.type === "ThisExpression") {
+                   console.log(path.parent,"111")
+                    if (path.parent.property.name === "$emit") {
+                      path.parent.property.name = "triggerEvent";
+                    }
+                  }
+              },
               ObjectExpression(path) {
-                //生成小程序方法中的参数
-                // console.log("内部二级path : " + JSON.stringify(path.node));
                 if (path.node.properties) {
-                  //traverse的方式生成小程序方法中的参数
                   path.traverse({
                     ObjectMethod(path1) {
                       var blockStatement1 = null;
                       path1.traverse({
                         BlockStatement(path1) {
-                          //  blockStatement1 = path1.node
-                          console.log("blockStatement1---:", path1.node);
                           if (path1.node.body) {
-                            //  path1.insertBefore(t.memberExpression(t.thisExpression(), t.identifier('setData')));
                           }
-                          //path.remove()
                         }
                       });
-                      //path1.replaceWithSourceString('111')
-
-                      //需要判断出哪些方法是在模板中调用，哪些方法是在JS中调用。
-                      //模板中调用的需要参数处理，JS中调用的不需要参数处理
+      
                     }
                   });
 
-                  //X-废弃--不用tarverse的方式生成小程序方法中的参数
-                  /* path.node.properties.map((v,i)=>{
-                    if(v.type==="ObjectMethod"){
-                      path.insertBefore(t.expressionStatement(t.stringLiteral("Because I'm easy come, easy go.")));
-                      //需要判断出哪些方法是在模板中调用，哪些方法是在JS中调用。
-                      //模板中调用的需要参数处理，JS中调用的不需要参数处理
-                      console.log("methods中方法",v)
-                    }
-                  }) */
                 }
               },
               //修改数据属性至this.data.prop等
@@ -334,7 +315,6 @@ export default {
                   path.node.object.type === "ThisExpression" &&
                   datasVals.includes(path.node.property.name)
                 ) {
-                  console.log("path.node.object::", path.node);
                   path.get("object").replaceWithSourceString("this.data");
                   //判是不是赋值操作
                   if (
@@ -343,6 +323,7 @@ export default {
                     t.isUpdateExpression(path.parentPath)
                   ) {
                     // find path
+                  console.log("path.node.object-----------", parent.isExpressionStatement(),path.node);
                     const expressionStatement = path.findParent(parent => {
                       parent.isExpressionStatement();
                     });
