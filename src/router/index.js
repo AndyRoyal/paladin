@@ -30,6 +30,10 @@ import jsTs0109 from '@/view/API/jsTs0109' //new
 import babylon from '@/view/new/babylon' 
 import babylon1 from '@/view/new/babylon1' 
 
+//API  - >path 操作
+import pathApi from '@/view/new/pathApi' 
+
+
 Vue.use(Router)
 
 export default new Router({
@@ -39,6 +43,11 @@ export default new Router({
       path: '/babylon',
       name: 'babylon',
       component: babylon
+    },
+    {
+      path: '/pathApi',
+      name: 'pathApi',
+      component: pathApi
     },
     {
       path: '/babylon1',

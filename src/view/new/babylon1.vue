@@ -52,7 +52,7 @@ export default {
       });
       traverse(ast, {
         enter(path) {
-          console.log("path \n",path.node.type)
+          //console.log("path \n",path.node.type)
           if (path.node.type === "ThisExpression") {
             // 不会遍历函数内部的this，只遍历钩子内部一级
             if (path.parent.property.name === "$emit") {
@@ -60,7 +60,7 @@ export default {
             }
           }
           if (path.node.type === "ObjectMethod") {
-            console.log("path.node.key.name \n",path.node.key.name)
+           
             if (path.node.key.name === "mounted") {
               path.node.key.name = "ready";
             } else if (path.node.key.name === "created") {
@@ -98,7 +98,6 @@ export default {
                       path.insertBefore(t.memberExpression(t.thisExpression(), t.identifier('setData')));
                     },
                     MemberExpression(path) {
-                      console.log("enter22: " + path.node);
                       let datasVals = datas.map((item, index) => {
                         return item.key.name; 
                       });
@@ -113,11 +112,12 @@ export default {
                           // find path
                           var  expressionStatement = path.findParent(
                             parent => {
-                              parent.isFunctionExpression();
+                              console.log("parent",parent)
+                               parent.isFunctionExpression()
                             }
                           );
-                          console.log(11,expressionStatement)
-                          if (expressionStatement) {
+                          console.log(11,expressionStatement,path.node.object.type)
+                         // if (expressionStatement) {
                             const finalExpStatement = t.expressionStatement(
                               t.callExpression(
                                 t.memberExpression(
@@ -137,9 +137,9 @@ export default {
                               )
                             );
                             console.log("finalExpStatement1", finalExpStatement);
-                            path.insertBefore(finalExpStatement)
-                           // expressionStatement.insertAfter(finalExpStatement);
-                          }
+                            //path.node.insertBefore(finalExpStatement)
+                           //expressionStatement.insertAfter(finalExpStatement);
+                          //}
                         }
                       }
                     }
