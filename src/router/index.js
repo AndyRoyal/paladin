@@ -26,12 +26,25 @@ import API from '@/view/API/API'
 import JsTs1204 from '@/view/API/JsTs1204' //new
 import jsTs0109 from '@/view/API/jsTs0109' //new
 
+//API  - >setData 场景优化
+import babylon from '@/view/new/babylon' 
+import babylon1 from '@/view/new/babylon1' 
 
 Vue.use(Router)
 
 export default new Router({
   mode:'history',
   routes: [
+    {
+      path: '/babylon',
+      name: 'babylon',
+      component: babylon
+    },
+    {
+      path: '/babylon1',
+      name: 'babylon1',
+      component: babylon1
+    },
     {
       path: '/JsTs1204',
       name: 'JsTs1204',
@@ -54,8 +67,8 @@ export default new Router({
     },
     {
       path: '/',
-      name: 'jsTs0109',
-      component: JsTs1204
+      name: 'babylon1',
+      component: babylon1
     },
     {
       path: '/babel',
