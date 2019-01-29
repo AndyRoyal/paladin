@@ -39,6 +39,13 @@ module.exports = {
       {
         test: /\.js$/,
         loader: 'babel-loader',
+        options: {
+          presets: ["env",'stage-0'],
+          plugins: [
+              ["extract", { "library":"lodash"}],
+              ["transform-runtime", {}]
+          ]
+      },
         include: [resolve('src'), resolve('test'), resolve('node_modules/webpack-dev-server/client')]
       },
       {
